@@ -26,3 +26,102 @@ u2 = u2_impulse.Y(2).Data;
 
 ### Data with impulse input on channel 2:
 <img src = "images/data_u2.png" width="500">
+
+## Hankel Matrix
+The pulse response sequence, _h<sub>k</sub>_, is obtained by combining the impulse response for each impulse input into each channel when _x<sub>o</sub>_ = 0. The _r<sup>th</sup>_ column of _h<sub>k</sub>_ is obtained when the _r<sup>th</sup>_ element of _u<sub>o</sub>_ is 1 and all other elements are zero. With a state space model described above, we can show that:
+
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}&space;h_o&space;=&space;0,\quad&space;h_k=CA^{k-1}B,\quad&space;k&space;=&space;1,2,3\hdots}">
+
+The pulse response sequence can be organized into an _mn x nq_ Hankel Matrix, _H<sub>n</sub>_:
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}&space;H_n=\begin{bmatrix}h_1&h_2&h_3&\hdots&h_n\\h_2&h_3&h_4&\hdots&h_{n&plus;1}\\&&\vdots&&\\h_n&h_{n&plus;1}&h_{n&plus;2}&\hdots&h_{2n-1}\end{bmatrix}\in&space;\mathbb{R}^{mn\times&space;nq}}">
+
+```Matlab
+% =========== H100 ============
+number = 100;
+H = zeros(2*number, 2*number);
+for i = 1:number
+    for j = 1:number
+        k = i+j-1;
+        H(2*i-1,2*j-1) = y11(k+mi);
+        H(2*i,2*j-1) = y21(k+mi);
+    
+        H(2*i-1,2*j) = y12(k+mi);
+        H(2*i,2*j) = y22(k+mi);
+    end
+end
+
+[U, S, V] = svd(H);
+```
+
+Since the state dimension is not known, we can approximate the state dimension through obtaining the singular values of the Hankel matrix. And from the plot, we can see that there are 9 singular values that are significant. 
+<img src = "images/hankel_singualr.png" width="500">
+
+## Impulse Response Simulation
+By virtue of the definition of Hankel Matrix:
+
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}&space;H_n=\mathcal{O}_n\mathcal{C}_n}">
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}\mathcal{O}_n=\begin{bmatrix}C\\CA\\\vdots\\CA^{n-1}\end{bmatrix}\in\mathbb{R}^{mn\times&space;n_s},\quad&space;\mathcal{C}_n=\begin{bmatrix}B&AB&\hdots&A^{n-1}B\end{bmatrix}\in\mathbb{R}^{n_s\times&space;nq}}">
+
+Through singular value decomposition, we can obtain the following relationship:
+
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}&space;H_n&space;=&space;\begin{bmatrix}U_1&U_2\end{bmatrix}&space;\begin{bmatrix}\Sigma_{ns}&0\\0&0\end{bmatrix}\begin{bmatrix}V_1^T\\V_2^T\end{bmatrix}&space;=&space;U_1\Sigma_{ns}V_1^T}">
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}H_n=\mathcal{O}_n\mathcal{C}_n=U_1\Sigma_{ns}V_1^T}">
+Through factorization the observability and controllability matrix can be obtained:
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}\mathcal{O}_n=U_1\Sigma_{ns}^{\frac{1}{2}},\quad\mathcal{C}_n=\Sigma_{ns}^{\frac{1}{2}}V_1^T}">
+
+To recover the state matrix, A, a new Hankel Matrix is computed:
+
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}\tilde{H_n}=\begin{bmatrix}h_2&h_3&h_4&\hdots&h_{n&plus;1}\\h_3&h_4&h_5&\hdots&h_{n&plus;2}\\&&\vdots&&\\h_{n&plus;1}&h_{n&plus;2}&h_{n&plus;3}&\hdots&h_{2n}\end{bmatrix}=\mathcal{O}_nA\mathcal{C}_n}">
+
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}A=\Sigma_{ns}^{-\frac{1}{2}}U_1^T\tilde{H_n}V_1\Sigma_{ns}^{-\frac{1}{2}}}">
+
+```Matlab
+H_tilt = zeros(2*number, 2*number);
+for i = 1:number
+    for j = 1:number
+        k = i+j;
+        H_tilt(2*i-1,2*j-1) = y11(k+mi);
+        H_tilt(2*i,2*j-1) = y21(k+mi);
+    
+        H_tilt(2*i-1,2*j) = y12(k+mi);
+        H_tilt(2*i,2*j) = y22(k+mi);
+    end
+end
+
+%% H_100, ns = [6,7,10,20]
+
+% build ns = [6,7,10,20] model
+ns = 6;
+H100_6 = U(:,1:ns)*S(1:ns,1:ns)*V(:,1:ns)';
+ns = 7;
+H100_7 = U(:,1:ns)*S(1:ns,1:ns)*V(:,1:ns)';
+ns = 10;
+H100_10 = U(:,1:ns)*S(1:ns,1:ns)*V(:,1:ns)';
+ns = 20;
+H100_20 = U(:,1:ns)*S(1:ns,1:ns)*V(:,1:ns)';
+
+% ========== H100_6 impulse response ===========
+y11_6 = zeros(1, 201);
+y21_6 = zeros(1, 201);
+y12_6 = zeros(1, 201);
+y22_6 = zeros(1, 201);
+
+for i = 1:number
+    for j = 1:number
+        k = i+j-1;
+        y11_6(k) = H100_6(2*i-1,2*j-1);
+        y21_6(k) = H100_6(2*i,2*j-1);
+    
+        y12_6(k) = H100_6(2*i-1,2*j);
+        y22_6(k) = H100_6(2*i,2*j);
+    end
+end
+%... repeat the process with states 7,10,20%
+```
+
+With the state dimension 6,7,10,and 20, each corresponding state matrix is recovered and simulated:
+<img src = "images/y11.png" width="500"><img src = "images/y21.png" width="500">
+<img src = "images/y12.png" width="500"><img src = "images/y22.png" width="500">
+
+## References
+[1] Linear Dynamic System, R. M'Closkey, (Final Project prepared by the instructor)
