@@ -73,8 +73,6 @@ To recover the state matrix, A, a new Hankel Matrix is computed:
 
 <img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}\tilde{H_n}=\begin{bmatrix}h_2&h_3&h_4&\hdots&h_{n&plus;1}\\h_3&h_4&h_5&\hdots&h_{n&plus;2}\\&&\vdots&&\\h_{n&plus;1}&h_{n&plus;2}&h_{n&plus;3}&\hdots&h_{2n}\end{bmatrix}=\mathcal{O}_nA\mathcal{C}_n}">
 
-<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}A=\Sigma_{ns}^{-\frac{1}{2}}U_1^T\tilde{H_n}V_1\Sigma_{ns}^{-\frac{1}{2}}}">
-
 ```Matlab
 H_tilt = zeros(2*number, 2*number);
 for i = 1:number
@@ -118,10 +116,43 @@ for i = 1:number
 end
 %... repeat the process with states 7,10,20%
 ```
-
-With the state dimension 6,7,10,and 20, each corresponding state matrix is recovered and simulated:
 <img src = "images/y11.png" width="500"><img src = "images/y21.png" width="500">
 <img src = "images/y12.png" width="500"><img src = "images/y22.png" width="500">
+
+With the state dimension 6,7,10,and 20, each corresponding state matrix can be recovered using the following formula:
+
+<img src="https://latex.codecogs.com/svg.image?\large&space;{\color{Gray}A=\mathcal{O}_n^\dagger\tilde{H_n}\mathcal{C}_n^\dagger}">
+
+```Matlab
+ns = 6;
+O_6 = U(:,1:ns)*sqrt(S(1:ns,1:ns));
+C_6 = sqrt(S(1:ns,1:ns))*V(:,1:ns)';
+A6 = pinv(O_6) * H_tilt * pinv(C_6);
+C6 = O_6(1:2, 1:ns);
+B6 = C_6(1:ns, 1:2);
+
+ns = 7;
+O_7 = U(:,1:ns)*sqrt(S(1:ns,1:ns));
+C_7 = sqrt(S(1:ns,1:ns))*V(:,1:ns)';
+A7 = pinv(O_7) * H_tilt * pinv(C_7);
+C7 = O_7(1:2, 1:ns);
+B7 = C_7(1:ns, 1:2);
+
+ns = 10;
+O_10 = U(:,1:ns)*sqrt(S(1:ns,1:ns));
+C_10 = sqrt(S(1:ns,1:ns))*V(:,1:ns)';
+A10 = pinv(O_10) * H_tilt * pinv(C_10);
+C10 = O_10(1:2, 1:ns);
+B10 = C_10(1:ns, 1:2);
+
+ns = 20;
+O_20 = U(:,1:ns)*sqrt(S(1:ns,1:ns));
+C_20 = sqrt(S(1:ns,1:ns))*V(:,1:ns)';
+A20 = pinv(O_20) * H_tilt * pinv(C_20);
+C20 = O_20(1:2, 1:ns);
+B20 = C_20(1:ns, 1:2);
+```
+
 
 ## References
 [1] Linear Dynamic System, R. M'Closkey, (Final Project prepared by the instructor)
